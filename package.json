@@ -13,7 +13,9 @@
     "axios": "^1.7.9",
     "react": "19.0.0",
     "react-native": "0.78.0",
+    "react-native-camera": "^4.2.1",
     "react-native-image-picker": "^8.1.0",
+    "react-native-permissions": "^5.2.5",
     "react-native-vector-icons": "^10.2.0"
   },
   "devDependencies": {
