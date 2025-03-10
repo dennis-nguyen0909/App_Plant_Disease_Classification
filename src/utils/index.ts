@@ -1,4 +1,5 @@
 import {PermissionsAndroid} from 'react-native';
+import ImageResizer from 'react-native-image-resizer';
 
 async function requestCameraPermission() {
   try {
@@ -22,3 +23,19 @@ async function requestCameraPermission() {
   }
 }
 export default requestCameraPermission;
+
+export const resizeImage = async (uri) => {
+  try {
+    const resizedImage = await ImageResizer.createResizedImage(
+      uri,
+      800,   // new width
+      600,   // new height
+      'JPEG',
+      80     // quality percentage
+    );
+    return resizedImage.uri;
+  } catch (error) {
+    console.error('Resize image error:', error);
+    return uri; // nếu lỗi, trả về ảnh gốc
+  }
+};

@@ -7,15 +7,19 @@ import {
   StyleSheet,
   FlatList,
   SafeAreaView,
+  ActivityIndicator,
+  Animated,
 } from 'react-native';
-import {launchImageLibrary} from 'react-native-image-picker';
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import axios from 'axios';
-
+import {resizeImage} from './src/utils';
 export default function App() {
   const [imageUri, setImageUri] = useState(null);
   const [prediction, setPrediction] = useState<string>('');
   const [confidence, setConfidence] = useState<string>('');
+  const [recommendation, setRecommendation] = useState<string>('');
   const [advice, setAdvice] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [listData, setListData] = useState<string[]>([]);
 
   // Hàm để chọn ảnh từ thư viện
@@ -23,6 +27,7 @@ export default function App() {
     launchImageLibrary({mediaType: 'photo'}, response => {
       if (!response.didCancel && !response.error && response.assets) {
         const uri = response.assets[0].uri;
+        console.log('uri', uri);
 
         // Clear the previous state before setting the new image
         setImageUri(uri);
@@ -46,20 +51,26 @@ export default function App() {
       name: 'photo.jpg',
     });
 
+    console.log('formData', formData);
+
     try {
+      setIsLoading(true);
       const response = await axios.post(
-        'http://127.0.0.1:8080/api/v1/predict',
+        // 'http://127.0.0.1:8080/api/v1/predict',
+        'https://hiredev-api.shop/api/v1/predict',
         formData,
         {
           headers: {'Content-Type': 'multipart/form-data'},
         },
       );
+      console.log('response', response);
       if (response.data) {
         await handleAskGeminiAI(
           `Tình trạng lá cây đang bị ${response?.data?.predicted_class}. Bạn hãy đưa ra lời khuyên`,
         );
         setPrediction(response.data.predicted_class);
         setConfidence(response?.data?.confidence);
+        setRecommendation(response?.data?.recommendation);
 
         // Add prediction and confidence to the list
         setListData(prevList => [
@@ -70,7 +81,10 @@ export default function App() {
       }
     } catch (error) {
       console.error(error);
+      console.log('duydeptrai', error);
       setPrediction('Error occurred during prediction');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -110,24 +124,94 @@ export default function App() {
     <Text style={styles.listItem}>{item}</Text>
   );
 
+  const taskPhoto = async () => {
+    try {
+      const result = await launchCamera({
+        mediaType: 'photo',
+        quality: 1,
+        maxWidth: 800,
+        maxHeight: 600,
+      });
+
+      if (result.assets && result.assets[0]?.uri) {
+        console.log('result', result.assets[0].uri);
+        setImageUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+    }
+  };
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Image Recognition App</Text>
-        {imageUri && <Image source={{uri: imageUri}} style={styles.image} />}
-        <Button title="Select Image" onPress={selectImage} />
-        <Button title="Predict" onPress={predictImage} />
-        {prediction && <Text>Tình trạng lá: {prediction}</Text>}
-        {confidence && <Text>Phần trăm: {confidence}</Text>}
-        {listData && (
-          <FlatList
-            data={listData}
-            renderItem={renderItem}
-            keyExtractor={(item, index) => index.toString()}
-            style={styles.list}
-          />
-        )}
-      </View>
+      {isLoading ? (
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          <ActivityIndicator size="large" color="#0000ff" />
+          <Animated.Text
+            style={{
+              color: 'red',
+              marginTop: 10,
+              opacity: new Animated.Value(0.3),
+              transform: [
+                {
+                  scale: new Animated.Value(1),
+                },
+              ],
+            }}
+            onLayout={() => {
+              Animated.loop(
+                Animated.sequence([
+                  Animated.parallel([
+                    Animated.timing(new Animated.Value(0.3), {
+                      toValue: 1,
+                      duration: 1000,
+                      useNativeDriver: true,
+                    }),
+                    Animated.timing(new Animated.Value(1.2), {
+                      toValue: 1.2,
+                      duration: 1000,
+                      useNativeDriver: true,
+                    }),
+                  ]),
+                  Animated.parallel([
+                    Animated.timing(new Animated.Value(0.3), {
+                      toValue: 0.3,
+                      duration: 1000,
+                      useNativeDriver: true,
+                    }),
+                    Animated.timing(new Animated.Value(1), {
+                      toValue: 1,
+                      duration: 1000,
+                      useNativeDriver: true,
+                    }),
+                  ]),
+                ]),
+              ).start();
+            }}>
+            Loading...
+          </Animated.Text>
+        </View>
+      ) : (
+        <View style={styles.container}>
+          <Text style={styles.title}>Image Recognition App</Text>
+          {imageUri && <Image source={{uri: imageUri}} style={styles.image} />}
+          <Button title="Select Image" onPress={selectImage} />
+          <Button title="Task photo" onPress={taskPhoto} />
+          <Button title="Predict" onPress={predictImage} />
+          <View style={{marginTop: 20}}>
+            {prediction && <Text>Leaf condition: {prediction}</Text>}
+            {confidence && <Text>Percentage: {confidence}</Text>}
+            {recommendation && <Text>Recomandation: {recommendation}</Text>}
+          </View>
+          {/* {listData && (
+        <FlatList
+          data={listData}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => index.toString()}
+          style={styles.list}
+        />
+      )} */}
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -137,6 +221,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 50,
   },
   title: {
     fontSize: 24,
@@ -147,6 +232,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     marginBottom: 20,
+    borderRadius: 10,
   },
   list: {
     marginTop: 20,
