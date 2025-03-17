@@ -9,120 +9,91 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Animated,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
 } from 'react-native';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import axios from 'axios';
-import {resizeImage} from './src/utils';
-export default function App() {
-  const [imageUri, setImageUri] = useState(null);
-  const [prediction, setPrediction] = useState<string>('');
-  const [confidence, setConfidence] = useState<string>('');
-  const [recommendation, setRecommendation] = useState<string>('');
-  const [advice, setAdvice] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [listData, setListData] = useState<string[]>([]);
 
-  // Hàm để chọn ảnh từ thư viện
+interface Prediction {
+  area: number;
+  box: number[];
+  class: number;
+  className: string;
+  confidence: number;
+}
+
+interface TensorflowPrediction {
+  className: string;
+  confidence: number;
+}
+
+export default function App() {
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [predictions, setPredictions] = useState<
+    Prediction[] | TensorflowPrediction | null
+  >(null);
+  const [recommendation, setRecommendation] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'tensorflow' | 'yolov8'>(
+    'tensorflow',
+  );
+
   const selectImage = () => {
     launchImageLibrary({mediaType: 'photo'}, response => {
-      if (!response.didCancel && !response.error && response.assets) {
+      if (!response.didCancel && response.assets && response.assets[0]?.uri) {
         const uri = response.assets[0].uri;
         console.log('uri', uri);
-
-        // Clear the previous state before setting the new image
         setImageUri(uri);
-        setPrediction('');
-        setConfidence('');
-        setAdvice('');
-        setListData([]); // Clear the list when a new image is selected
+        setPredictions(null);
+        setRecommendation('');
       }
     });
   };
 
-  // Hàm để gọi API dự đoán
   const predictImage = async () => {
-    if (!imageUri) return;
+    if (!imageUri) {
+      Alert.alert('Error', 'Please select an image first');
+      return;
+    }
 
     const formData = new FormData();
-
     formData.append('image', {
       uri: imageUri.startsWith('file://') ? imageUri : `file://${imageUri}`,
       type: 'image/jpeg',
       name: 'photo.jpg',
     });
 
-    console.log('formData', formData);
-
     try {
       setIsLoading(true);
-      const response = await axios.post(
-        // 'http://127.0.0.1:8080/api/v1/predict',
-        'https://hiredev-api.shop/api/v1/predict',
-        formData,
-        {
-          headers: {'Content-Type': 'multipart/form-data'},
-        },
-      );
-      console.log('response', response);
-      if (response.data) {
-        await handleAskGeminiAI(
-          `Tình trạng lá cây đang bị ${response?.data?.predicted_class}. Bạn hãy đưa ra lời khuyên`,
-        );
-        setPrediction(response.data.predicted_class);
-        setConfidence(response?.data?.confidence);
-        setRecommendation(response?.data?.recommendation);
+      const endpoint =
+        activeTab === 'tensorflow'
+          ? 'http://127.0.0.1:8080/api/tensorflow/predict'
+          : 'http://127.0.0.1:8080/api/yolov8/predict';
 
-        // Add prediction and confidence to the list
-        setListData(prevList => [
-          ...prevList,
-          `Tình trạng: ${response.data.predicted_class}`,
-          `Phần trăm dự đoán: ${response?.data?.confidence}`,
-        ]);
+      const response = await axios.post(endpoint, formData, {
+        headers: {'Content-Type': 'multipart/form-data'},
+      });
+
+      if (response.data) {
+        if (activeTab === 'tensorflow') {
+          console.log('response.data', response.data?.predictions);
+          setPredictions(response.data.predictions);
+        } else {
+          console.log('response.data', response.data?.predictions);
+
+          setPredictions(response.data.predictions);
+        }
+        setRecommendation(response.data?.prediction?.recommendation || '');
       }
     } catch (error) {
       console.error(error);
-      console.log('duydeptrai', error);
-      setPrediction('Error occurred during prediction');
+      setPredictions(null);
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleAskGeminiAI = async (question: string) => {
-    const url =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBCc-hUh7vGCWQ6W6MO4Cosq0qM6MyljKg';
-
-    try {
-      const data = {
-        contents: [
-          {
-            parts: [{text: question}],
-          },
-        ],
-      };
-
-      const res = await axios.post(url, data, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (res?.data) {
-        setAdvice(res?.data?.candidates[0].content?.parts[0]?.text);
-
-        // setListData(prevList => [
-        //   ...prevList,
-        //   `Lời khuyên: ${res?.data?.candidates[0].content?.parts[0]?.text}`,
-        // ]);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // Render function for FlatList
-  const renderItem = ({item}: {item: string}) => (
-    <Text style={styles.listItem}>{item}</Text>
-  );
 
   const taskPhoto = async () => {
     try {
@@ -141,6 +112,13 @@ export default function App() {
       console.error('Error taking photo:', error);
     }
   };
+
+  const handleTabChange = (tab: 'tensorflow' | 'yolov8') => {
+    setActiveTab(tab);
+    setPredictions(null);
+    setRecommendation('');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {isLoading ? (
@@ -191,26 +169,78 @@ export default function App() {
           </Animated.Text>
         </View>
       ) : (
-        <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.title}>Image Recognition App</Text>
-          {imageUri && <Image source={{uri: imageUri}} style={styles.image} />}
-          <Button title="Select Image" onPress={selectImage} />
-          <Button title="Task photo" onPress={taskPhoto} />
-          <Button title="Predict" onPress={predictImage} />
-          <View style={{marginTop: 20}}>
-            {prediction && <Text>Leaf condition: {prediction}</Text>}
-            {confidence && <Text>Percentage: {confidence}</Text>}
-            {recommendation && <Text>Recomandation: {recommendation}</Text>}
+
+          <View style={styles.tabContainer}>
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === 'tensorflow' && styles.activeTab,
+              ]}
+              onPress={() => handleTabChange('tensorflow')}>
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === 'tensorflow' && styles.activeTabText,
+                ]}>
+                Tensorflow
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'yolov8' && styles.activeTab]}
+              onPress={() => handleTabChange('yolov8')}>
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === 'yolov8' && styles.activeTabText,
+                ]}>
+                YOLOv8
+              </Text>
+            </TouchableOpacity>
           </View>
-          {/* {listData && (
-        <FlatList
-          data={listData}
-          renderItem={renderItem}
-          keyExtractor={(item, index) => index.toString()}
-          style={styles.list}
-        />
-      )} */}
-        </View>
+
+          {imageUri && <Image source={{uri: imageUri}} style={styles.image} />}
+          <View style={styles.buttonContainer}>
+            <Button title="Select Image" onPress={selectImage} />
+            <Button title="Task photo" onPress={taskPhoto} />
+            <Button title="Predict" onPress={predictImage} />
+          </View>
+          <View style={{marginTop: 20, width: '100%'}}>
+            {predictions && (
+              <View>
+                {activeTab === 'tensorflow' ? (
+                  <>
+                    <Text>
+                      Leaf condition:{' '}
+                      {(predictions as TensorflowPrediction).className}
+                    </Text>
+                    <Text>
+                      Percentage:{' '}
+                      {(
+                        (predictions as TensorflowPrediction).confidence * 100
+                      ).toFixed(2)}
+                      %
+                    </Text>
+                  </>
+                ) : (
+                  <ScrollView style={{maxHeight: 200}}>
+                    {(predictions as Prediction[]).map((item, index) => (
+                      <View key={index} style={styles.predictionItem}>
+                        <Text>Class: {item.className}</Text>
+                        <Text>
+                          Confidence: {(item.confidence * 100).toFixed(2)}%
+                        </Text>
+                        <Text>Area: {item.area.toFixed(2)}</Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            )}
+            {recommendation && <Text>Recommendation: {recommendation}</Text>}
+          </View>
+        </ScrollView>
       )}
     </SafeAreaView>
   );
@@ -218,19 +248,20 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
+    flexGrow: 1,
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    padding: 50,
+    padding: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginVertical: 20,
   },
   image: {
-    width: 300,
-    height: 300,
+    width: '100%',
+    height: undefined,
+    aspectRatio: 1,
     marginBottom: 20,
     borderRadius: 10,
   },
@@ -242,5 +273,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
     marginVertical: 5,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  tab: {
+    padding: 10,
+    width: 120,
+    alignItems: 'center',
+  },
+  activeTab: {
+    backgroundColor: '#007AFF',
+  },
+  tabText: {
+    color: '#007AFF',
+    fontSize: 16,
+  },
+  activeTabText: {
+    color: 'white',
+  },
+  predictionItem: {
+    padding: 10,
+    marginVertical: 5,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+  },
+  buttonContainer: {
+    width: '100%',
+    flexDirection: 'column',
+    gap: 10,
   },
 });
