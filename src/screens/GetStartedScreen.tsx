@@ -38,10 +38,10 @@ export default function GetStartedScreen() {
             <Icon name="leaf-maple" size={24} color="black" />
             <Text style={styles.featureText}>Instant Disease Detection</Text>
           </View>
-          <View style={styles.featureRow}>
+          {/* <View style={styles.featureRow}>
             <Icon name="camera" size={24} color="black" />
             <Text style={styles.featureText}>Real-time Analysis</Text>
-          </View>
+          </View> */}
           <View style={styles.featureRow}>
             <Icon name="book-open-variant" size={24} color="black" />
             <Text style={styles.featureText}>Treatment Recommendations</Text>

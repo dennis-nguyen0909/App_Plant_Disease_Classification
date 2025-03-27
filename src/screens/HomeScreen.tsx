@@ -1,3 +1,4 @@
+import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
 import React, {useState, useRef, useEffect} from 'react';
 import {
@@ -8,14 +9,12 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   Dimensions,
   Alert,
   Animated,
 } from 'react-native';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Import Ionicons
-// import { toast } from 'sonner-native'; // Xóa import này
+import ImageResizer from 'react-native-image-resizer';
 
 interface Prediction {
   area: number;
@@ -30,6 +29,7 @@ interface TensorflowPrediction {
   className: string;
   confidence: number;
   recommendations?: string[];
+  disease_info?: any;
 }
 
 const {width} = Dimensions.get('window');
@@ -44,10 +44,12 @@ export default function HomeScreen() {
     'tensorflow',
   );
   const [recommendationYolo, setRecommendationYolo] = useState([]);
+  const navigation = useNavigation();
 
   // Store images for each tab
   const [tensorflowImage, setTensorflowImage] = useState<string | null>(null);
   const [yoloImage, setYoloImage] = useState<string | null>(null);
+  const [diseaseInfo, setDiseaseInfo] = useState<any>(null);
 
   // Animation values
   const tabAnimation = useRef(new Animated.Value(0)).current;
@@ -85,20 +87,36 @@ export default function HomeScreen() {
       Alert.alert('Thông báo', 'Vui lòng chọn ảnh trước.');
       return;
     }
-
-    const formData = new FormData();
-    formData.append('image', {
-      uri: imageUri.startsWith('file://') ? imageUri : `file://${imageUri}`,
-      type: 'image/jpeg',
-      name: 'photo.jpg',
-    });
+    console.log('imageUri', imageUri);
 
     try {
       setIsLoading(true);
+
+      const resizedImage = await ImageResizer.createResizedImage(
+        imageUri,
+        activeTab === 'tensorflow' ? 224 : 1000,
+        activeTab === 'tensorflow' ? 224 : 1000,
+        'JPEG',
+        80,
+        0,
+        undefined,
+      );
+
+      const formData = new FormData();
+      formData.append('image', {
+        uri: resizedImage.uri,
+        type: 'image/jpeg',
+        name: 'photo.jpg',
+      });
       const endpoint =
         activeTab === 'tensorflow'
-          ? 'http://localhost:8080/api/tensorflow/predict'
-          : 'http://localhost:8080/api/yolov8/predict';
+          ? 'https://dennis-api.shop/api/tensorflow/predict'
+          : 'https://dennis-api.shop/api/yolov8/predict';
+
+      // const endpoint =
+      //   activeTab === 'tensorflow'
+      //     ? 'http://localhost:8080/api/tensorflow/predict'
+      //     : 'http://localhost:8080/api/yolov8/predict';
 
       const response = await axios.post(endpoint, formData, {
         headers: {'Content-Type': 'multipart/form-data'},
@@ -106,6 +124,7 @@ export default function HomeScreen() {
 
       if (response.data) {
         setPredictions(response.data.predictions);
+        setDiseaseInfo(response.data.predictions.disease_info);
         if (response.data.recommendations) {
           setRecommendationYolo(response.data.recommendations);
         } else {
@@ -113,8 +132,15 @@ export default function HomeScreen() {
         }
       }
     } catch (error) {
-      console.error(error);
-      Alert.alert('Lỗi', 'Không thể dự đoán ảnh.');
+      console.log('error', error);
+      if (error.response && error.response.status === 413) {
+        Alert.alert(
+          'Lỗi',
+          'Kích thước ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn.',
+        );
+      } else {
+        Alert.alert('Lỗi', 'Lỗi từ server vui lòng thử lại');
+      }
       setPredictions(null);
     } finally {
       setIsLoading(false);
@@ -134,6 +160,7 @@ export default function HomeScreen() {
       // Change tab
       setActiveTab(tab);
       setPredictions(null);
+      setDiseaseInfo(null);
 
       // Animate tab indicator
       Animated.timing(tabAnimation, {
@@ -179,7 +206,6 @@ export default function HomeScreen() {
       Alert.alert('Lỗi', 'Không thể chụp ảnh.');
     }
   };
-  console.log('predictions', predictions);
 
   // Calculate tab indicator position
   const translateX = tabAnimation.interpolate({
@@ -187,13 +213,17 @@ export default function HomeScreen() {
     outputRange: [0, width / 2 - 8], // Adjust based on tab width
   });
 
+  console.log('predictions', predictions);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Plant Disease Detection</Text>
-        <Text style={styles.subtitle}>
-          Upload a photo to analyze plant health
-        </Text>
+    <View style={styles.container}>
+      <View style={styles.headerBackground}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Plant Disease Detection</Text>
+          <Text style={styles.subtitle}>
+            Upload a photo to analyze plant health
+          </Text>
+        </View>
       </View>
 
       <View style={styles.tabContainer}>
@@ -234,7 +264,7 @@ export default function HomeScreen() {
             />
           ) : (
             <View style={styles.placeholderContainer}>
-              <Icon name="leaf" size={48} color="#666" />
+              {/* <Icon name="leaf" size={48} color="#666" /> */}
               <Text style={styles.placeholderText}>No image selected</Text>
             </View>
           )}
@@ -242,12 +272,9 @@ export default function HomeScreen() {
 
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.button} onPress={selectImage}>
-            <Icon name="comments" size={24} color="white" />
             <Text style={styles.buttonText}>Select Image</Text>
           </TouchableOpacity>
-
           <TouchableOpacity style={styles.button} onPress={taskPhoto}>
-            <Icon name="camera-outline" size={24} color="white" />
             <Text style={styles.buttonText}>Take Photo</Text>
           </TouchableOpacity>
         </View>
@@ -274,22 +301,36 @@ export default function HomeScreen() {
                 <Text style={styles.resultLabel}>
                   Condition: {(predictions as TensorflowPrediction).className}
                 </Text>
-                {/* <Text style={styles.resultValue}>
-                  {(predictions as TensorflowPrediction).className}
-                </Text> */}
-                <Text style={styles.resultLabel}>
+                {/* <Text style={styles.resultLabel}>
                   Confidence:{' '}
                   {(
                     (predictions as TensorflowPrediction).confidence * 100
                   ).toFixed(2)}
                   %
-                </Text>
-                {/* <Text style={styles.resultValue}>
-                  {(
-                    (predictions as TensorflowPrediction).confidence * 100
-                  ).toFixed(2)}
-                  %
                 </Text> */}
+                {diseaseInfo && (
+                  <TouchableOpacity
+                    style={[
+                      {
+                        margin: 0,
+                        marginTop: 10,
+                        backgroundColor: 'black',
+                        padding: 8,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                      },
+                    ]}
+                    onPress={() =>
+                      navigation.navigate('InfoDisease', {
+                        diseaseInfo: diseaseInfo,
+                        diseaseName: (predictions as TensorflowPrediction)
+                          .className,
+                      })
+                    }
+                    disabled={!imageUri}>
+                    <Text style={styles.analyzeButtonText}>Info Disease</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             ) : (
               Array.isArray(predictions) &&
@@ -298,13 +339,29 @@ export default function HomeScreen() {
                   <Text style={styles.resultLabel}>
                     Condition: {item.className}
                   </Text>
-                  {/* <Text style={styles.resultValue}>{item.className}</Text> */}
-                  <Text style={styles.resultLabel}>
+                  {/* <Text style={styles.resultLabel}>
                     Confidence: {(item.confidence * 100).toFixed(2)}%
-                  </Text>
-                  {/* <Text style={styles.resultValue}>
-                    {(item.confidence * 100).toFixed(2)}%
                   </Text> */}
+                  <TouchableOpacity
+                    style={[
+                      {
+                        margin: 0,
+                        marginTop: 10,
+                        backgroundColor: 'black',
+                        padding: 8,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                      },
+                    ]}
+                    onPress={() =>
+                      navigation.navigate('InfoDisease', {
+                        diseaseInfo: item.disease_info,
+                        diseaseName: item.className,
+                      })
+                    }
+                    disabled={!imageUri}>
+                    <Text style={styles.analyzeButtonText}>Info Disease</Text>
+                  </TouchableOpacity>
                 </View>
               ))
             )}
@@ -317,11 +374,12 @@ export default function HomeScreen() {
                 {(predictions as TensorflowPrediction)?.recommendations?.map(
                   (rec, index) => (
                     <View key={index} style={styles.recommendationItem}>
-                      <Icon
+                      {/* <Icon
                         name="checkmark-circle-outline"
                         size={20}
                         color="#000"
-                      />
+                      /> */}
+                      <Text style={{fontWeight: 'bold'}}>{index + 1}.</Text>
                       <Text style={styles.recommendationText}>{rec}</Text>
                     </View>
                   ),
@@ -333,11 +391,12 @@ export default function HomeScreen() {
                 <Text style={styles.recommendationsTitle}>Gợi Ý Chăm Sóc:</Text>
                 {recommendationYolo.map((rec, index) => (
                   <View key={index} style={styles.recommendationItem}>
-                    <Icon
+                    {/* <Icon
                       name="checkmark-circle-outline"
                       size={20}
                       color="#000"
-                    />
+                    /> */}
+                    <Text style={{fontWeight: 'bold'}}>{index + 1}.</Text>
                     <Text style={styles.recommendationText}>{rec}</Text>
                   </View>
                 ))}
@@ -346,7 +405,7 @@ export default function HomeScreen() {
           </ScrollView>
         )}
       </Animated.View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -355,9 +414,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  headerBackground: {
+    backgroundColor: '#000',
+    paddingTop: 40, // Add padding to extend background color to the top
+    width: '100%',
+  },
   header: {
     padding: 20,
-    backgroundColor: '#000',
     alignItems: 'center',
   },
   title: {
@@ -409,17 +472,19 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     marginBottom: 20,
-    height: 200,
-    width: 200,
+    height: 270,
+    width: 270,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#f5f5f5',
     borderWidth: 1,
-    // borderColor: '#eee',
+    borderColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   image: {
     width: '100%',
     height: '100%',
+    resizeMode: 'cover',
   },
   placeholderContainer: {
     flex: 1,
@@ -459,7 +524,7 @@ const styles = StyleSheet.create({
   analyzeButton: {
     backgroundColor: '#000',
     margin: 20,
-    padding: 16,
+    padding: 12,
     borderRadius: 12,
     alignItems: 'center',
   },
@@ -519,12 +584,25 @@ const styles = StyleSheet.create({
   },
   recommendationItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 8,
   },
   recommendationText: {
     fontSize: 16,
     marginLeft: 8,
     flex: 1,
+  },
+  diseaseInfoContainer: {
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+  },
+  diseaseInfoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  diseaseInfoText: {
+    fontSize: 16,
   },
 });

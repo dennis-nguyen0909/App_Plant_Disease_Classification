@@ -7,6 +7,7 @@ import GetStartedScreen from './src/screens/GetStartedScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import HomeScreen2 from './src/screens/HomeScreen2';
 import CameraScreen from './src/screens/CameraScreen';
+import InfoDisease from './src/screens/InfoDisease';
 
 const Stack = createNativeStackNavigator();
 
@@ -20,6 +21,13 @@ function RootStack() {
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="Home2" component={HomeScreen2} />
       <Stack.Screen name="Camera" component={CameraScreen} />
+      <Stack.Screen
+        name="InfoDisease"
+        component={InfoDisease}
+        options={{
+          headerShown: true,
+        }}
+      />
     </Stack.Navigator>
   );
 }

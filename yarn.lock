@@ -1519,6 +1519,23 @@
     "serve-static" "^1.13.1"
     "ws" "^6.2.3"
 
+"@react-native-community/cli-tools@^15.1.2":
+  "integrity" "sha512-2RzoUKR+Y03ijBeeSoCSQihyN6dxy3fbHjraO4MheZZUzt/Yd1VMEDd0R5aa6rtiRDoknbHt45RL2GMa8MSaEA=="
+  "resolved" "https://registry.npmjs.org/@react-native-community/cli-tools/-/cli-tools-15.1.3.tgz"
+  "version" "15.1.3"
+  dependencies:
+    "appdirsjs" "^1.2.4"
+    "chalk" "^4.1.2"
+    "execa" "^5.0.0"
+    "find-up" "^5.0.0"
+    "mime" "^2.4.1"
+    "open" "^6.2.0"
+    "ora" "^5.4.1"
+    "prompts" "^2.4.2"
+    "semver" "^7.5.2"
+    "shell-quote" "^1.7.3"
+    "sudo-prompt" "^9.0.0"
+
 "@react-native-community/cli-tools@15.0.1":
   "integrity" "sha512-N79A+u/94roanfmNohVcNGu6Xg+0idh63JHZFLC9OJJuZwTifGMLDfSTHZATpR1J7rebozQ5ClcSUePavErnSg=="
   "resolved" "https://registry.npmjs.org/@react-native-community/cli-tools/-/cli-tools-15.0.1.tgz"
@@ -1564,6 +1581,29 @@
     "graceful-fs" "^4.1.3"
     "prompts" "^2.4.2"
     "semver" "^7.5.2"
+
+"@react-native-vector-icons/common@^11.0.0":
+  "integrity" "sha512-Ee0UAOsJRAUKb/yzs6qRSuxxLX7LbyQP/jikik9HZwfSCO81MkHwklXbYg6/+NAaYPyLCa3VsATorWY3f5M3lQ=="
+  "resolved" "https://registry.npmjs.org/@react-native-vector-icons/common/-/common-11.0.0.tgz"
+  "version" "11.0.0"
+  dependencies:
+    "@react-native-community/cli-tools" "^15.1.2"
+    "picocolors" "^1.1.1"
+    "plist" "^3.1.0"
+
+"@react-native-vector-icons/evil-icons@^1.10.1":
+  "integrity" "sha512-bH46bNhDYXui22TeKL4KTrzqvPbO0ZA3ppJR88ZnfRt9GWwEQTqV2CImEHrsPqyPnrk3crWgP3KXP9C227Gm5w=="
+  "resolved" "https://registry.npmjs.org/@react-native-vector-icons/evil-icons/-/evil-icons-1.10.1.tgz"
+  "version" "1.10.1"
+  dependencies:
+    "@react-native-vector-icons/common" "^11.0.0"
+
+"@react-native-vector-icons/fontawesome6@^6.7.1":
+  "integrity" "sha512-4B23wt80oX7hUgca11X8E8DLvf9rKAwxwZQkhc+6FdSq2lWXMg6Sr2a5v99hUQnefyJk4emry30jQapjjyhGtA=="
+  "resolved" "https://registry.npmjs.org/@react-native-vector-icons/fontawesome6/-/fontawesome6-6.7.1.tgz"
+  "version" "6.7.1"
+  dependencies:
+    "@react-native-vector-icons/common" "^11.0.0"
 
 "@react-native/assets-registry@0.78.0":
   "integrity" "sha512-PPHlTRuP9litTYkbFNkwveQFto3I94QRWPBBARU0cH/4ks4EkfCfb/Pdb3AHgtJi58QthSHKFvKTQnAWyHPs7w=="
@@ -2131,6 +2171,11 @@
   "integrity" "sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g=="
   "resolved" "https://registry.npmjs.org/@ungap/structured-clone/-/structured-clone-1.3.0.tgz"
   "version" "1.3.0"
+
+"@xmldom/xmldom@^0.8.8":
+  "integrity" "sha512-2WALfTl4xo2SkGCYRt6rDTFfk9R1czmBvUQy12gK2KuRKIpWEhcbbzy8EZXtz/jkRqHX8bFEc6FC1HjX4TUWYw=="
+  "resolved" "https://registry.npmjs.org/@xmldom/xmldom/-/xmldom-0.8.10.tgz"
+  "version" "0.8.10"
 
 "abort-controller@^3.0.0":
   "integrity" "sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg=="
@@ -5709,6 +5754,15 @@
   dependencies:
     "find-up" "^4.0.0"
 
+"plist@^3.1.0":
+  "integrity" "sha512-uysumyrvkUX0rX/dEVqt8gC3sTBzd4zoWfLeS29nb53imdaXVvLINYXTI2GNqzaMuvacNx4uJQ8+b3zXR0pkgQ=="
+  "resolved" "https://registry.npmjs.org/plist/-/plist-3.1.0.tgz"
+  "version" "3.1.0"
+  dependencies:
+    "@xmldom/xmldom" "^0.8.8"
+    "base64-js" "^1.5.1"
+    "xmlbuilder" "^15.1.1"
+
 "possible-typed-array-names@^1.0.0":
   "integrity" "sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg=="
   "resolved" "https://registry.npmjs.org/possible-typed-array-names/-/possible-typed-array-names-1.1.0.tgz"
@@ -7098,6 +7152,11 @@
   "integrity" "sha512-+dbF1tHwZpXcbOJdVOkzLDxZP1ailvSxM6ZweXTegylPny803bFhA+vqBYw4s31NSAk4S2Qz+AKXK9a4wkdjcQ=="
   "resolved" "https://registry.npmjs.org/ws/-/ws-7.5.10.tgz"
   "version" "7.5.10"
+
+"xmlbuilder@^15.1.1":
+  "integrity" "sha512-yMqGBqtXyeN1e3TGYvgNgDVZ3j84W4cwkOXQswghol6APgZWaff9lnbvN7MHYJOiXsvGPXtjTYJEiC9J2wv9Eg=="
+  "resolved" "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-15.1.1.tgz"
+  "version" "15.1.1"
 
 "y18n@^4.0.0":
   "integrity" "sha512-JKhqTOwSrqNA1NY5lSztJ1GrBiUodLMmIZuLiDaMRJ+itFd+ABVE8XBjOvIWL+rSqNDC74LCSFmlb/U4UZ4hJQ=="
