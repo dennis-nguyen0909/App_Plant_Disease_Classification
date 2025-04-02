@@ -1,0 +1,57 @@
+name: Build React Native Android
+
+on:
+  push:
+    branches:
+      - main  # Hoặc bất kỳ nhánh nào bạn muốn CI/CD tự động chạy khi có thay đổi.
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Chạy trên Ubuntu runner
+    
+    steps:
+      # 1. Checkout mã nguồn
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # 2. Cài đặt Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'  # Cài đặt Node.js phiên bản 16 (hoặc theo phiên bản bạn đang dùng)
+
+      # 3. Cài đặt dependencies
+      - name: Install dependencies
+        run: |
+          npm install
+          npx pod-install ios
+
+      # 4. Cài đặt Java JDK (Android build yêu cầu Java)
+      - name: Set up Java JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'  # Hoặc phiên bản phù hợp với môi trường của bạn
+
+      # 5. Cài đặt Android SDK
+      - name: Install Android SDK
+        run: |
+          sudo apt update
+          sudo apt install -y openjdk-11-jdk
+          sudo apt install -y android-sdk
+          sudo apt install -y gradle
+
+      # 6. Build ứng dụng Android (phát hành APK)
+      - name: Build APK
+        run: |
+          cd android
+          ./gradlew assembleRelease  # Hoặc ./gradlew assembleDebug nếu bạn muốn build phiên bản Debug
+
+      # 7. Lưu APK như artifact
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk  # Đường dẫn tới APK
