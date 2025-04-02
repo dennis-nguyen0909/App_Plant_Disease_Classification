@@ -30,7 +30,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           java-version: '11'
-          distribution: 'adoptium'  # Chỉ định phân phối JDK
+          distribution: 'GHES 3.3.5'  # Chỉ định phân phối JDK
           architecture: x64
 
       - name: Install Android SDK
