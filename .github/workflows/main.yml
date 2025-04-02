@@ -21,7 +21,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '18'  # Cài đặt Node.js phiên bản 16 (hoặc theo phiên bản bạn đang dùng)
+          node-version: '16.x'  # Cài đặt Node.js phiên bản 16 (hoặc theo phiên bản bạn đang dùng)
 
       # 3. Cài đặt dependencies
       - name: Install dependencies
@@ -47,6 +47,7 @@ jobs:
       - name: Build APK
         run: |
           cd android
+          ./gradlew clean
           ./gradlew assembleRelease  # Hoặc ./gradlew assembleDebug nếu bạn muốn build phiên bản Debug
 
       # 7. Lưu APK như artifact
@@ -54,4 +55,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk  # Đường dẫn tới APK
+          path: android/app/build/outputs/apk/release/app-release.apk  # Đảm bảo đường dẫn đúng
