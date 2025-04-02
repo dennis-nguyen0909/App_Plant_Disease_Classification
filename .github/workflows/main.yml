@@ -30,12 +30,12 @@ jobs:
         uses: actions/setup-java@v2
         with:
            distribution: 'adopt'
-           java-version: '11'
+           java-version: '17'
 
       - name: Install Android SDK
         run: |
           sudo apt update
-          sudo apt install -y openjdk-11-jdk
+          sudo apt install -y openjdk-17-jdk
           sudo apt install -y android-sdk
           sudo apt install -y gradle
 
