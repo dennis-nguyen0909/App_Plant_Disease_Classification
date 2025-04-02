@@ -34,6 +34,8 @@ jobs:
         uses: actions/setup-java@v2
         with:
           java-version: '11'  # Hoặc phiên bản phù hợp với môi trường của bạn
+          distribution: 'adoptopenjdk
+          architecture: x64
 
       # 5. Cài đặt Android SDK
       - name: Install Android SDK
