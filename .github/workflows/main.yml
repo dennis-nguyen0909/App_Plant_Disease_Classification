@@ -49,9 +49,3 @@ jobs:
       - name: Check if APK exists
         run: |
           if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then echo "APK exists"; else echo "APK not found"; fi
-
-      - name: Upload APK as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
