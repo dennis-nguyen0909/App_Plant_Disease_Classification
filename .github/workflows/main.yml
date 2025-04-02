@@ -30,7 +30,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           java-version: '11'
-          distribution: 'adoptopenjdk'  # Chỉ định phân phối JDK
+          distribution: 'adoptium'  # Chỉ định phân phối JDK
           architecture: x64
 
       - name: Install Android SDK
