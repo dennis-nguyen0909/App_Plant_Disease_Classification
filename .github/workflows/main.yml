@@ -50,10 +50,4 @@ jobs:
           ./gradlew clean
           ./gradlew assembleRelease  # Hoặc ./gradlew assembleDebug nếu bạn muốn build phiên bản Debug
 
-      # 7. Lưu APK như artifact
-      - name: Upload APK as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk  # Đảm bảo đường dẫn đúng
 
