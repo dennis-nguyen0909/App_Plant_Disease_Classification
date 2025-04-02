@@ -44,7 +44,3 @@ jobs:
           cd android
           ./gradlew clean
           ./gradlew assembleRelease
-
-      - name: Check if APK exists
-        run: |
-          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then echo "APK exists"; else echo "APK not found"; fi
